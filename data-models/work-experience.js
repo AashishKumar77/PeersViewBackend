@@ -1,0 +1,40 @@
+'use strict';
+
+module.exports = function (sequelize, dataTypes) {
+    const WorkExperience = sequelize.define('workExperience', {
+        id: {
+            type: dataTypes.INTEGER.UNSIGNED,
+            primaryKey: true,
+            autoIncrement: true
+        },
+        name: {
+            type: dataTypes.STRING
+        },
+        role: {
+            type: dataTypes.STRING
+        },
+        skill: {
+            type: dataTypes.STRING
+        },
+        achievement: {
+            type: dataTypes.STRING
+        },
+        from: {
+            type: dataTypes.DATE
+        },
+        to: {
+            type: dataTypes.DATE
+        }
+    }, {
+            tableName: 'work_experience',
+            timestamp: true,
+            collate: 'utf8_unicode_ci',
+            indexes: []
+        });
+
+    WorkExperience.associate = function (models) {
+        this.belongsTo(models.user);
+    };
+
+    return WorkExperience;
+};

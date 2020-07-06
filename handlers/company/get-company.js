@@ -1,0 +1,104 @@
+/*eslint-disable max-len*/
+'use strict';
+
+/**
+ * @author Raju KC
+ * @description Get a specific company
+ */
+
+const lib = require('../../lib');
+
+/**
+ * Validation of req.body, req, param,
+ * and req.query
+ * @param {any} req request object
+ * @param {any} res response object
+ * @param {any} next next object
+ * @returns {next} returns the next handler - success response
+ * @returns {rpc} returns the validation error - failed response
+ */
+function validateParams (req, res, next) {
+  let paramsSchema = {
+    companyId: {
+      isInt: {
+        errorMessage: 'Invalid Resource: Company Id'
+      }
+    }
+  };
+
+  req.checkParams(paramsSchema);
+  return req.getValidationResult()
+  .then(validationErrors => {
+    if (validationErrors.array().length !== 0) {
+      return res.status(400)
+      .send(new lib.rpc.ValidationError(validationErrors.array()));
+    }
+
+    return next();
+  })
+  .catch(error => {
+    res.status(500)
+    .send(new lib.rpc.InternalError(error));
+  });
+}
+
+/**
+ * This would be the fallback if the user existed
+ * @see {@link lib/isUserTokenExist}
+ * @see isUserTokenExist
+ * @param {any} req request object
+ * @param {any} res response object
+ * @param {any} next next object
+ * @returns {next} returns the next handler - success response
+ * @returns {rpc} returns the validation error - failed response
+ */
+function getCompany (req, res, next) {
+  let companyId = req.$params.companyId;
+
+  return req.db.company.findOne({
+    include: [{
+      model: req.db.companyAttachment,
+      attributes: ['id', 'cloudinaryPublicId','usage']
+    }],
+    where: {
+      id: {
+        [req.Op.eq]: companyId
+      }
+    }
+  })
+  .then((company) => {
+    req.$scope.company = company;
+    next();
+    return company;
+  })
+  .catch(error => {
+    res.status(500)
+    .send(new lib.rpc.InternalError(error));
+
+    req.log.error({
+      err: error.message
+    }, 'company.getCompany Error - get-company');
+  });
+}
+
+/**
+ * Response data to client
+ * @param {any} req request object
+ * @param {any} res response object
+ * @returns {any} body response object
+ */
+function response (req, res) {
+  let company = req.$scope.company;
+  let body = {
+    status: 'SUCCESS',
+    status_code: 0,
+    http_code: 200,
+    data: company
+  };
+
+  res.status(200).send(body);
+}
+
+module.exports.validateParams = validateParams;
+module.exports.logic = getCompany;
+module.exports.response = response;
